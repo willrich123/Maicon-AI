@@ -1,0 +1,9 @@
+node_modules
+certs/
+dist
+.DS_Store
+*.local
+.env
+server/connection.json
+server/memoria.json
+data/

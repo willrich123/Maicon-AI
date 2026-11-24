@@ -1,0 +1,20 @@
+{
+  "validado": false,
+  "sessaoDedicada": false,
+  "sessaoWindows": null,
+  "executavel": "C:/Users/Conline47/Downloads/Conline - Homologação/Conline - Homologação/Desktop.exe",
+  "identidade": { "id": "MAPEAR_USUARIO_ATUAL" },
+  "identidadeModelo": "{usuario}",
+  "ambiente": { "id": "MAPEAR_CATALOGO_CONECTADO" },
+  "ambienteModelo": "{banco}",
+  "operacional": { "id": "MAPEAR_ABRIR_OPERACIONAL" },
+  "modalidade": { "id": "MAPEAR_MODALIDADE" },
+  "modalidadeAntesInserir": true,
+  "modalidades": { "IM": "MAPEAR_IM", "EM": "MAPEAR_EM", "IA": "MAPEAR_IA", "EA": "MAPEAR_EA", "IT": "MAPEAR_IT", "ET": "MAPEAR_ET" },
+  "inserir": { "id": "MAPEAR_INSERIR" },
+  "clienteCodigo": { "id": "MAPEAR_BUSCA_CLIENTE_POR_CODIGO" },
+  "clienteNome": { "id": "MAPEAR_NOME_CLIENTE_RESOLVIDO" },
+  "referencia": { "id": "MAPEAR_REFERENCIA_CLIENTE" },
+  "numero": { "id": "MAPEAR_NUMERO_GERADO" },
+  "confirmar": { "id": "MAPEAR_CONFIRMAR" }
+}

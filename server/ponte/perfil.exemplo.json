@@ -1,0 +1,23 @@
+{
+  "executavel": "C:\\Program Files (x86)\\HeadCargo Conline\\Desktop.exe",
+  "login": {
+    "usuario": { "id": "MAPEAR_USUARIO", "tipo": "ComboBox" },
+    "senha": { "id": "MAPEAR_SENHA", "tipo": "Edit" },
+    "entrar": { "id": "MAPEAR_ENTRAR", "tipo": "Button" }
+  },
+  "identidade": {
+    "controle": { "id": "MAPEAR_USUARIO_CONECTADO" },
+    "modelo": "{usuario}"
+  },
+  "processo": {
+    "pesquisa": { "id": "MAPEAR_PESQUISA", "tipo": "Edit" },
+    "buscar": { "id": "MAPEAR_BUSCAR", "tipo": "Button" },
+    "numero": { "id": "MAPEAR_NUMERO_PROCESSO" }
+  },
+  "atividades": {
+    "aba": { "nome": "Atividades", "tipo": "TabItem" },
+    "grade": { "id": "MAPEAR_GRADE_ATIVIDADES" },
+    "colunas": { "codigo": 0, "atividade": 1, "situacao": 2, "responsavel": 3, "previsao": 4 }
+  },
+  "sair": { "id": "MAPEAR_SAIR", "tipo": "Button" }
+}

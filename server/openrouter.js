@@ -1,0 +1,123 @@
+const MODELO = "gemma-4-31b-it";
+export const MODELO_RESPOSTA = MODELO;
+export const MODELO_OPENROUTER = "google/gemma-4-31b-it:free";
+
+export function modelosOpenRouter() {
+  return [MODELO_OPENROUTER];
+}
+
+export function modeloDaEtapa() {
+  return modelosOpenRouter()[0];
+}
+
+function erroHttp(mensagem, status) {
+  const erro = new Error(mensagem || "O OpenRouter não respondeu.");
+  if (status) erro.status = status;
+  return erro;
+}
+
+function usoDaResposta(contagem) {
+  if (!contagem) return null;
+  const entrada = Number(contagem.prompt_tokens) || 0;
+  const saida = Number(contagem.completion_tokens) || 0;
+  const total = Number(contagem.total_tokens) || entrada + saida;
+  return total ? { entrada, saida, total, contexto: 262144 } : null;
+}
+
+export async function pedirOpenRouter(chave, corpo, aoTexto, sinal) {
+  const acesso = String(chave ?? "").trim();
+  if (!acesso) throw erroHttp("A chave do OpenRouter não está configurada.", 401);
+  const tools = Array.isArray(corpo?.tools) ? corpo.tools : [];
+  const maxTokens = Number(corpo?.max_tokens);
+  const temperatura = Number(corpo?.temperature);
+  const requisitar = (stream) => fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    signal: sinal,
+    headers: {
+      Authorization: `Bearer ${acesso}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODELO_OPENROUTER,
+      messages: Array.isArray(corpo?.messages) ? corpo.messages : [],
+      stream,
+      reasoning: { enabled: false },
+      temperature: Number.isFinite(temperatura) ? temperatura : 0.3,
+      ...(Number.isInteger(maxTokens) && maxTokens > 0 ? { max_tokens: maxTokens } : {}),
+      ...(tools.length ? { tools } : {}),
+      ...(tools.length && corpo.tool_choice ? { tool_choice: corpo.tool_choice } : {}),
+    }),
+  });
+  const resp = await requisitar(true);
+  if (!resp.ok || !resp.body) {
+    const dados = await resp.json().catch(() => ({}));
+    if (resp.status === 429 && dados?.error?.metadata?.provider_name && !sinal?.aborted) {
+      const segunda = await requisitar(false);
+      const dadosSegunda = await segunda.json().catch(() => ({}));
+      if (!segunda.ok) throw erroHttp(dadosSegunda?.error?.message || `O OpenRouter respondeu ${segunda.status}`, segunda.status);
+      const { content, tool_calls } = dadosSegunda.choices?.[0]?.message ?? {};
+      if (!String(content ?? "").trim() && !tool_calls?.length) throw erroHttp("O Gemma 4 não devolveu resposta.", 502);
+      if (content) aoTexto?.(content);
+      const uso = usoDaResposta(dadosSegunda.usage);
+      return { role: "assistant", content: content || "", ...(uso ? { uso } : {}), ...(tool_calls?.length ? { tool_calls } : {}) };
+    }
+    throw erroHttp(dados?.error?.message || `O OpenRouter respondeu ${resp.status}`, resp.status);
+  }
+  const leitor = resp.body.getReader();
+  const decodificar = new TextDecoder();
+  let resto = "";
+  let content = "";
+  const ferramentas = [];
+  let uso = null;
+  const ler = (linha) => {
+    const texto = String(linha ?? "").trim();
+    if (!texto.startsWith("data:")) return;
+    const bruto = texto.slice(5).trim();
+    if (!bruto || bruto === "[DONE]") return;
+    let pedaco;
+    try {
+      pedaco = JSON.parse(bruto);
+    } catch {
+      return;
+    }
+    if (pedaco.error) throw erroHttp(pedaco.error.message || "O OpenRouter não respondeu.", Number(pedaco.error.code) || 502);
+    const delta = pedaco.choices?.[0]?.delta || {};
+    const trecho = String(delta.content ?? "");
+    if (trecho) {
+      content += trecho;
+      aoTexto?.(trecho);
+    }
+    for (const chamada of delta.tool_calls ?? []) {
+      const indice = Number.isInteger(chamada.index) ? chamada.index : ferramentas.length;
+      while (ferramentas.length <= indice) ferramentas.push({ id: "", nome: "", argumentos: "" });
+      const atual = ferramentas[indice];
+      if (chamada.id) atual.id = chamada.id;
+      if (chamada.function?.name) atual.nome += chamada.function.name;
+      if (chamada.function?.arguments) atual.argumentos += chamada.function.arguments;
+    }
+    uso = usoDaResposta(pedaco.usage) ?? uso;
+  };
+  while (true) {
+    const { done, value } = await leitor.read();
+    if (done) break;
+    resto += decodificar.decode(value, { stream: true });
+    const linhas = resto.split("\n");
+    resto = linhas.pop() ?? "";
+    for (const linha of linhas) ler(linha);
+  }
+  if (resto.trim()) ler(resto);
+  const toolsSaida = ferramentas
+    .filter((item) => item.nome)
+    .map((item, indice) => ({
+      id: item.id || `call_${indice}_${item.nome}`,
+      type: "function",
+      function: { name: item.nome, arguments: item.argumentos || "{}" },
+    }));
+  if (!content.trim() && !toolsSaida.length) throw erroHttp("O modelo gratuito não devolveu resposta.", 502);
+  return {
+    role: "assistant",
+    content,
+    ...(uso ? { uso } : {}),
+    ...(toolsSaida.length ? { tool_calls: toolsSaida } : {}),
+  };
+}

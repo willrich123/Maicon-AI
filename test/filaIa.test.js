@@ -1,0 +1,174 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  estouroDeTokens,
+  executarFilaComFallback,
+  filaDeChaves,
+  podeTrocarChave,
+} from "../server/filaIa.js";
+
+test("a fila usa somente a chave OpenRouter do ambiente", () => {
+  const fila = filaDeChaves([], {
+    OLLAMA_API_KEY: "teste-ollama",
+    OPENROUTER_API_KEY: "teste-openrouter",
+    GOOGLE_API_KEY: "teste-google",
+  });
+  assert.deepEqual(fila.map((item) => item.provedor), ["openrouter"]);
+  assert.deepEqual(fila.map((item) => item.chave), ["teste-openrouter"]);
+});
+
+test("a fila ignora chaves pessoais e antigas do OpenRouter", () => {
+  const fila = filaDeChaves(
+    [
+      { provedor: "openrouter", chave: "teste-openrouter" },
+      { provedor: "outro", chave: "teste-outro" },
+    ],
+    { OPENROUTER_API_KEY: "chave-do-ambiente" },
+  );
+  assert.deepEqual(fila.map((item) => item.chave), ["chave-do-ambiente"]);
+});
+
+test("Google e chaves pessoais não substituem OpenRouter ausente", () => {
+  const fila = filaDeChaves(
+    [{ provedor: "openrouter", chave: "teste-pessoal" }],
+    { OPENROUTER_API_KEY: "  ", GOOGLE_API_KEY: "teste-google" },
+  );
+  assert.deepEqual(fila, []);
+});
+
+test("401 numa chave do DeepSeek usa a próxima", async () => {
+  const tentativas = [];
+  const fila = [
+    { provedor: "openrouter", chave: "chave-vencida" },
+    { provedor: "openrouter", chave: "chave-reserva" },
+  ];
+  const resposta = await executarFilaComFallback(fila, async (item) => {
+    tentativas.push(item.chave);
+    if (item.chave === "chave-vencida") {
+      const erro = new Error("API key not valid");
+      erro.status = 401;
+      throw erro;
+    }
+    return "ok";
+  });
+  assert.equal(resposta, "ok");
+  assert.deepEqual(tentativas, ["chave-vencida", "chave-reserva"]);
+});
+
+test("abort do usuário não troca de chave", async () => {
+  let tentativas = 0;
+  const abort = new Error("Aborted");
+  abort.name = "AbortError";
+  await assert.rejects(
+    executarFilaComFallback(
+      [
+        { provedor: "openrouter", chave: "chave-a" },
+        { provedor: "openrouter", chave: "chave-b" },
+      ],
+      async () => {
+        tentativas += 1;
+        throw abort;
+      },
+    ),
+    (erro) => erro === abort,
+  );
+  assert.equal(tentativas, 1);
+});
+
+test("erro de programação não troca de chave", async () => {
+  let tentativas = 0;
+  await assert.rejects(
+    executarFilaComFallback(
+      [
+        { provedor: "openrouter", chave: "chave-a" },
+        { provedor: "openrouter", chave: "chave-b" },
+      ],
+      async () => {
+        tentativas += 1;
+        throw new TypeError("valor inesperado");
+      },
+    ),
+    /valor inesperado/,
+  );
+  assert.equal(tentativas, 1);
+});
+
+test("erro que não é falta de crédito não vira mensagem genérica", async () => {
+  await assert.rejects(
+    executarFilaComFallback(
+      [{ provedor: "openrouter", chave: "teste-openrouter" }],
+      async () => {
+        throw new Error("Unauthorized");
+      },
+    ),
+    /Unauthorized/,
+  );
+});
+
+test("limite por minuto não parece cota esgotada", async () => {
+  await assert.rejects(
+    executarFilaComFallback(
+      [{ provedor: "google", chave: "teste-google" }],
+      async () => {
+        const erro = new Error("Quota exceeded for metric: input_token_count, limit: 16000. Please retry in 50s.");
+        erro.status = 429;
+        throw erro;
+      },
+    ),
+    /Espere um minuto/,
+  );
+});
+
+test("falta de crédito avisa para recarregar a chave", async () => {
+  await assert.rejects(
+    executarFilaComFallback(
+      [{ provedor: "openrouter", chave: "teste-openrouter" }],
+      async () => {
+        const erro = new Error("insufficient credits");
+        erro.status = 402;
+        throw erro;
+      },
+    ),
+    /cota do OpenRouter acabou/,
+  );
+});
+
+test("erros de autenticação, cota e modelo permitem fallback", () => {
+  for (const mensagem of [
+    "Unauthenticated",
+    "invalid api key",
+    "User not found",
+    "quota exceeded",
+    "rate limit",
+    "billing required",
+    "insufficient credit",
+    "model does not exist",
+    "do not have access",
+  ]) {
+    assert.equal(podeTrocarChave(new Error(mensagem)), true, mensagem);
+  }
+});
+
+test("erro de propriedade unsupported permite fallback", () => {
+  assert.equal(podeTrocarChave(new Error("property 'modelo' is unsupported")), true);
+  assert.equal(podeTrocarChave(new Error("O modelo configurado não está disponível nesta conta.")), true);
+});
+
+test("413 request too large permite fallback", () => {
+  const erro = new Error("Request too large");
+  erro.status = 413;
+  assert.equal(podeTrocarChave(erro), true);
+});
+
+test("reconhece crédito, cota e janela estourada", () => {
+  assert.equal(estouroDeTokens(Object.assign(new Error("Insufficient credits"), { status: 402 })), true);
+  assert.equal(estouroDeTokens(Object.assign(new Error("Rate limit exceeded"), { status: 429 })), true);
+  assert.equal(estouroDeTokens(new Error("This model's maximum context length is 1048576 tokens.")), true);
+  assert.equal(estouroDeTokens(new Error("Os créditos da IA acabaram. Recarregue a chave do OpenRouter para continuar.")), true);
+});
+
+test("não trata falha comum como estouro de tokens", () => {
+  assert.equal(estouroDeTokens(Object.assign(new Error("Unauthorized"), { status: 401 })), false);
+  assert.equal(estouroDeTokens(Object.assign(new Error("OpenRouter indisponível"), { status: 503 })), false);
+  assert.equal(estouroDeTokens(new Error("modelo inexistente")), false);
+});

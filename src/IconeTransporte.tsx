@@ -1,0 +1,4 @@
+export type MeioTransporte='navio'|'aviao'|'caminhao';
+export function IconeTransporte({meio,tamanho=22}:{meio:MeioTransporte;tamanho?:number}){
+ return <svg width={tamanho} height={tamanho} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{meio==='aviao'?<g transform="rotate(35 12 12)"><path d="M12 2c-1 0-1.5 1.1-1.5 2.5V9L3 14v2l7.5-2v4.5L8 21v1l4-1 4 1v-1l-2.5-2.5V14l7.5 2v-2l-7.5-5V4.5C13.5 3.1 13 2 12 2Z"/></g>:meio==='caminhao'?<><path d="M2.5 5.5h12v12h-12zM14.5 9h3.7l3.3 4v4.5h-2M14.5 17.5H10M3.5 17.5H5M18 9.5v4h3.5"/><circle cx="7.5" cy="18" r="2.2"/><circle cx="17.2" cy="18" r="2.2"/></>:<><path d="M5 12V7h14v5M8 7V4h8v3M12 4V2M2.5 13l9.5-3 9.5 3-2.2 6H4.7zM12 10v9M2 22c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M8 9h2M14 9h2"/></>}</svg>;
+}

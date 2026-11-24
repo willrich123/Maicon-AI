@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "predev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cert-dev.ps1",
-    "dev": "concurrently -k \"node server/index.js\" \"node server/entrada.js\" \"vite\"",
+    "dev": "concurrently -k \"node --watch server/index.js\" \"node server/entrada.js\" \"vite\"",
     "dev:api": "node --watch server/index.js",
     "dev:ui": "vite",
+    "ponte:agente": "node server/ponte/agente.js",
+    "test": "node --test",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },
@@ -16,10 +18,13 @@
     "express": "^5.1.0",
     "mssql": "^11.0.1",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.5.438",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "searoute-ts": "^2.3.1",
+    "ws": "^8.23.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

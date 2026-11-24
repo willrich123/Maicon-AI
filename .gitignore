@@ -4,6 +4,18 @@ dist
 .DS_Store
 *.local
 .env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 server/connection.json
 server/memoria.json
 data/
+
+# Dados e catálogos da instalação local
+sql/consultas/
+server/porte/catalogo*.json.gz

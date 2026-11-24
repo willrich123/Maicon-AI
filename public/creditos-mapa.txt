@@ -1,0 +1,9 @@
+Créditos do mapa da carga
+
+HeadCargo — dados de embarque e viagens.
+Natural Earth — cartografia de base — https://www.naturalearthdata.com/
+UNECE UN/LOCODE 2025-1 — dados convertidos em índice de coordenadas para consulta no mapa.
+https://unlocode.unece.org/publications/
+Licença CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+OurAirports — coordenadas de aeroportos — https://ourairports.com/data/
+Eurostat SeaRoute — malha para estimativas de rotas marítimas — https://eurostat.github.io/searoute/

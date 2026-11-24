@@ -1,0 +1,30 @@
+.mc-menu > button {font-size: 13px; text-align: left}
+.mc-workspace .mc-menu {flex:0 0 auto;padding-bottom:8px}
+.mc-workspace .mc-menu>button {padding:9px 12px;margin-bottom:2px}
+.mc-overview {padding-bottom:8px}
+.mc-edicao-campo {padding:14px 0;border-bottom:1px solid var(--p-line)}
+.mc-edicao-campo label span,.mc-edicao-campo p {color:var(--p-muted);font-size:11px}
+.mc-edicao-campo p {margin:0 0 8px;overflow-wrap:anywhere;white-space:pre-wrap}
+.mc-edicao-campo input {width:100%}
+.mc-filtros {display:flex; align-items:stretch; flex-wrap:wrap; gap:10px; padding:18px 0}
+.mc-filtros .mw-search {margin:0; flex:1 1 230px}
+.mc-filtros select {font:inherit; color:var(--p-text); border:1px solid var(--p-line); background:var(--p-surface); border-radius:8px; padding:0 10px; min-height:38px}
+.mc-secoes {display:flex; flex-wrap:wrap; margin:10px 0 18px}
+.mc-secoes button[aria-pressed="true"] {color:var(--p-accent); background:var(--p-surface); border-color:var(--p-line)}
+.mc-ficha {margin-top:0}
+.mc-ficha dt,.mc-vazio {font-size:12px; color:var(--p-muted)}
+.mc-ficha dd {font-size:13px; margin:6px 0 0; overflow-wrap:anywhere; white-space:pre-line}
+.mc-ficha > div:last-child {grid-column:1 / -1}
+.mc-workspace .ponte-tabela td:first-child {min-width:125px}
+.mc-rascunho .mw-detail-title {margin-bottom:24px}
+.mc-rascunho label,.mc-mapa-formulario label {display:block;font-size:12px;color:var(--p-muted);margin-bottom:8px}
+.mc-rascunho textarea {width:100%;resize:vertical;font:inherit;line-height:1.6;padding:12px}
+.mc-mapa-formulario {align-items:center;padding-top:0}
+.mc-mapa-formulario label {margin:0}
+.mc-mapa-formulario select {max-width:100%}
+@media(max-width:640px){
+  .mw-workspace .mw-header nav {display:flex; order:3; width:100%; align-items:center; gap:16px; height:32px}
+  .mw-workspace .mw-header {height:auto; min-height:88px; row-gap:0; padding-top:8px}
+  .mw-workspace .mw-header nav > [aria-current]:after {bottom:-7px}
+  .mc-ficha {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
